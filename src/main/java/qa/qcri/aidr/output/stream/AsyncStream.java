@@ -31,7 +31,11 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
+<<<<<<< HEAD
 @Path("/stream/")
+=======
+@Path("/stream")
+>>>>>>> 1b539dfda1e61bf0767ddc8ad6b093abc94cb041
 public class AsyncStream implements ServletContextListener {
 	// Time-out constants
 	private static final int REDIS_CALLBACK_TIMEOUT = 5 * 60 * 1000;		// in ms
@@ -49,7 +53,11 @@ public class AsyncStream implements ServletContextListener {
 	private final boolean rejectNullFlag = false;
 	private String redisChannel = "*";							// channel to subscribe to		
 	private static final String redisHost = "localhost";		// Current assumption: REDIS running on same m/c
+<<<<<<< HEAD
 	private static final int redisPort = 6379;					
+=======
+	private static final int redisPort = 1978;					
+>>>>>>> 1b539dfda1e61bf0767ddc8ad6b093abc94cb041
 
 	// Jedis related
 	public static JedisConnectionObject jedisConn;

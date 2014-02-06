@@ -76,7 +76,11 @@ import org.slf4j.LoggerFactory;
 
 import qa.qcri.aidr.output.utils.JsonDataFormatter;
 
+<<<<<<< HEAD
 @Path("/fetch/")
+=======
+@Path("/fetch")
+>>>>>>> 1b539dfda1e61bf0767ddc8ad6b093abc94cb041
 public class GetBufferedAIDRData implements ServletContextListener {
 
 	// Debugging
@@ -95,7 +99,11 @@ public class GetBufferedAIDRData implements ServletContextListener {
 	private final boolean rejectNullFlag = false;
 	/////////////////////////////////////////////////////////////////////////////
 	@POST
+<<<<<<< HEAD
 	@Path("/channel/{crisisCode}")
+=======
+	@Path("/{crisisCode}")
+>>>>>>> 1b539dfda1e61bf0767ddc8ad6b093abc94cb041
 	@Produces({"application/json", "text/html"})
 	public Response handlePost(@PathParam("crisisCode") String channelCode,
 											@QueryParam("callbackName") String callbackName,

@@ -47,7 +47,11 @@ public class ChannelBufferManager {
 
 	// Redis connection related
 	public static final String redisHost = "localhost";	// Current assumption: REDIS running on same m/c
+<<<<<<< HEAD
 	public static final int redisPort = 6379;	
+=======
+	public static final int redisPort = 1978;	
+>>>>>>> 1b539dfda1e61bf0767ddc8ad6b093abc94cb041
 
 	// Jedis related
 	public static JedisConnectionObject jedisConn;

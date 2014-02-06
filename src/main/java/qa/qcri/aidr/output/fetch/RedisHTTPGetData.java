@@ -112,7 +112,11 @@ public class RedisHTTPGetData extends HttpServlet {
 
 	private String redisChannel = "aidr_predict.clex_20131201";		// channel to subscribe to		
 	private static String redisHost = "localhost";					// Current assumption: REDIS running on same m/c
+<<<<<<< HEAD
 	private static int redisPort = 6379;					
+=======
+	private static int redisPort = 1978;					
+>>>>>>> 1b539dfda1e61bf0767ddc8ad6b093abc94cb041
 	public static JedisPoolConfig poolConfig;
 	public static JedisPool pool;
 	public Jedis subscriberJedis = null;
