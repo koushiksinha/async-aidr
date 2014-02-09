@@ -31,11 +31,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
-<<<<<<< HEAD
-@Path("/stream/")
-=======
 @Path("/stream")
->>>>>>> 1b539dfda1e61bf0767ddc8ad6b093abc94cb041
 public class AsyncStream implements ServletContextListener {
 	// Time-out constants
 	private static final int REDIS_CALLBACK_TIMEOUT = 5 * 60 * 1000;		// in ms
@@ -53,12 +49,9 @@ public class AsyncStream implements ServletContextListener {
 	private final boolean rejectNullFlag = false;
 	private String redisChannel = "*";							// channel to subscribe to		
 	private static final String redisHost = "localhost";		// Current assumption: REDIS running on same m/c
-<<<<<<< HEAD
-	private static final int redisPort = 6379;					
-=======
-	private static final int redisPort = 1978;					
->>>>>>> 1b539dfda1e61bf0767ddc8ad6b093abc94cb041
 
+	private static final int redisPort = 6379;					
+	
 	// Jedis related
 	public static JedisConnectionObject jedisConn;
 	public Jedis subscriberJedis = null;
@@ -68,7 +61,7 @@ public class AsyncStream implements ServletContextListener {
 
 	// Related to Async Thread management
 	public static ExecutorService executorServicePool;
-	//public ChunkedOutput<String> responseWriter = new ChunkedOutput<String>(String.class);
+	private ChunkedOutput<String> responseWriter = null;
 
 	// Debugging
 	private static Logger logger = LoggerFactory.getLogger(AsyncStream.class);
@@ -90,6 +83,14 @@ public class AsyncStream implements ServletContextListener {
 
 	@Override
 	public void contextDestroyed(ServletContextEvent sce) {
+		if (!responseWriter.isClosed()) {
+			try {
+				responseWriter.close();
+				logger.info("'contextDetstroyed] closed open ChunkedOutput stream.");
+			} catch (IOException e) {
+				logger.error("[contextDestroyed] Error in closing ChunkedOutput");
+			}
+		}
 		logger.info("[finalize] Taking down all channel buffers and threads");
 		jedisConn.finalize();
 		jedisConn = null;
@@ -196,15 +197,15 @@ public class AsyncStream implements ServletContextListener {
 	@Produces("application/json")
 	public ChunkedOutput<String> streamChunkedResponse(
 			@PathParam("crisisCode") String channelCode,
-			@QueryParam("callbackName") final String callbackName,
+			@QueryParam("callback") final String callbackName,
 			@DefaultValue("-1") @QueryParam("rate") Float rate,
 			@DefaultValue("0") @QueryParam("duration") String duration) throws IOException {
-		
-		ChunkedOutput<String> responseWriter = new ChunkedOutput<String>(String.class);
 		
 		if (channelCode != null) {
 			// TODO: Handle client refresh of web-page in same session				
 			if (initRedisConnection()) {
+				responseWriter = new ChunkedOutput<String>(String.class);
+				
 				// Get callback function name, if any
 				String channel = setFullyQualifiedChannelName(CHANNEL_PREFIX_CODE, channelCode);
 				aidrSubscriber = new RedisSubscriber(subscriberJedis, responseWriter, channel, callbackName, rate, duration);
@@ -223,21 +224,20 @@ public class AsyncStream implements ServletContextListener {
 		} 
 		else {
 			// No crisisCode provided...
-			StringBuilder htmlMessageString = new StringBuilder();
-
-			// Build HTML doc to return
-			htmlMessageString.append("<!DOCTYPE html>");
-			htmlMessageString.append("<html>");
-			htmlMessageString.append("<head><title>REDIS PUBSUB Channel Data Output Service</title></head>");
-			htmlMessageString.append("<body>");
-			htmlMessageString.append("<h1>Invalid/No CrisisCode Provided! </h1>");
-			htmlMessageString.append("<h2>Can not initiate REDIS channel subscription!</h2>");
-			htmlMessageString.append("</body></html>");
-			responseWriter.write(htmlMessageString.toString());
-			responseWriter.close();
+			StringBuilder errorMessageString = new StringBuilder();
+			if (callbackName != null) {
+				errorMessageString.append(callbackName).append("(");
+			}
+			errorMessageString.append("{\"crisisCode\":\"null\"");
+			errorMessageString.append("\"streaming status\":\"error\"}");
+			if (callbackName != null) {
+				errorMessageString.append(")");
+			}
+			responseWriter = new ChunkedOutput<String>(String.class);
+			responseWriter.write(errorMessageString.toString());
 		}
 		logger.info("[streamChunkedResponse] Reached end of function");
-		return null;
+		return responseWriter;
 	}
 
 	// cleanup all threads 
@@ -260,8 +260,6 @@ public class AsyncStream implements ServletContextListener {
 		}
 	}
 
-
-
 	public class RedisSubscriber extends JedisPubSub implements AsyncListener, Runnable {
 		//////////////////////////////////////////////////////////////////////////////////////////////////
 		// The inner class that handles both Asynchronous Servlet Thread and Redis Threaded Subscription
@@ -272,7 +270,7 @@ public class AsyncStream implements ServletContextListener {
 		private Jedis jedis;
 
 		// Async execution related 
-		private ChunkedOutput<String> responseWriter = null;
+		private final ChunkedOutput<String> responseWriter;
 		private boolean runFlag = true;
 		private boolean error = false;
 		private boolean timeout = false;
@@ -287,7 +285,9 @@ public class AsyncStream implements ServletContextListener {
 		private List<String> messageList = Collections.synchronizedList(new ArrayList<String>());
 
 
-		public RedisSubscriber(Jedis jedis, ChunkedOutput<String> responseWriter, String channel, String callbackName, Float rate, String duration) throws IOException {
+		public RedisSubscriber(final Jedis jedis, final ChunkedOutput<String> responseWriter, 
+							   final String channel, final String callbackName, 
+							   final Float rate, final String duration) throws IOException {
 			this.channel = channel;
 			this.callbackName = callbackName;
 			this.jedis = jedis;
@@ -395,13 +395,19 @@ public class AsyncStream implements ServletContextListener {
 						int count = taggerOutput.getMessageCount();
 						try {
 							//logger.info("[run] Formatted jsonDataList: " + jsonDataList.toString());
-							responseWriter.write(jsonDataList.toString());
-							responseWriter.write("\n");
-							logger.info("[run] sent jsonp data, count = " + count);
-						} catch (IOException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
+							if (!responseWriter.isClosed()) {
+								responseWriter.write(jsonDataList.toString());
+								responseWriter.write("\n");
+								logger.info("[run] sent jsonp data, count = " + count);
+							}
+							else {
+								logger.info("Possible client disconnect...");
+								break;
+							}
+						} catch (Exception e) {
+							logger.info("Error in write attempt - possible client disconnect");
+							setRunFlag(false);
+						} 
 						synchronized (messageList) {
 							if (count != 0)									// we did not just send an empty JSONP message
 								lastAccessedTime = new Date().getTime();	// approx. time when message last received from REDIS
@@ -459,8 +465,7 @@ public class AsyncStream implements ServletContextListener {
 					try {
 						responseWriter.close();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						logger.error("[run] Error attempting closing ChunkedOutput.");
 					}
 				}
 				try {

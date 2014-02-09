@@ -20,10 +20,13 @@
 
 	<servlet-mapping>
 		<servlet-name>javax.ws.rs.core.Application</servlet-name>
-		<url-pattern>/async/*</url-pattern>
+		<url-pattern>/rest/*</url-pattern>
 	</servlet-mapping>
-
+	
 	<listener>
 		<listener-class>qa.qcri.aidr.output.stream.AsyncStream</listener-class>
+	</listener>
+	<listener>
+		<listener-class>qa.qcri.aidr.output.stream.NewTestChunkedOutput</listener-class>
 	</listener>
 </web-app>

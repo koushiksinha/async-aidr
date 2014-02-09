@@ -31,8 +31,8 @@ public class NewTaggerJsonOutputAdapter {
 	}
 
 	public String buildJsonString(String rawJsonString, boolean rejectNullFlag) {
-		Gson jsonObject = new GsonBuilder().serializeNulls()			//.disableHtmlEscaping()
-				.serializeSpecialFloatingPointValues().setPrettyPrinting()
+		Gson jsonObject = new GsonBuilder().serializeNulls().disableHtmlEscaping()
+				.serializeSpecialFloatingPointValues()
 				.create();
 		// remove top-level array: we are only dealing with JsonObjects from REDIS in aidr-output
 		if (rawJsonString.startsWith("["))		// should never happen 
